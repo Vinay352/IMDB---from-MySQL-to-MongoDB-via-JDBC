@@ -1,0 +1,71 @@
+{initialCollection:'PeopleDenorm', pipeline:[{$addFields: {
+    countKnownFor: {
+     $size: {
+      $ifNull: [
+       '$knownfor',
+       []
+      ]
+     }
+    },
+    countActed: {
+     $size: {
+      $ifNull: [
+       '$acted',
+       []
+      ]
+     }
+    }
+   }}, {$match: {
+    countKnownFor: {
+     $gt: 2
+    },
+    countActed: {
+     $gte: 2
+    }
+   }}, {$unwind: {
+    path: '$knownfor'
+   }}, {$lookup: {
+    from: 'Movies',
+    localField: 'knownfor',
+    foreignField: '_id',
+    as: 'kfAndActedMovies'
+   }}, {$unwind: {
+    path: '$kfAndActedMovies'
+   }}, {$match: {
+    'kfAndActedMovies.genres': 'Sci-Fi'
+   }}, {$lookup: {
+    from: 'MoviesDenorm',
+    localField: 'kfAndActedMovies._id',
+    foreignField: '_id',
+    as: 'checkDirCnt'
+   }}, {$unwind: {
+    path: '$checkDirCnt'
+   }}, {$addFields: {
+    countDir: {
+     $size: {
+      $ifNull: [
+       '$checkDirCnt.directors',
+       []
+      ]
+     }
+    }
+   }}, {$match: {
+    countDir: {
+     $gt: 3
+    }
+   }}, {$lookup: {
+    from: 'People',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'final'
+   }}, {$unwind: {
+    path: '$final'
+   }}, {$group: {
+    _id: {
+     byear: '$final.byear',
+     dyear: '$final.dyear'
+    },
+    people: {
+     $push: '$_id'
+    }
+   }}]}

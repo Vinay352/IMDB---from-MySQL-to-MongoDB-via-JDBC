@@ -1,0 +1,53 @@
+{initialCollection:'Movies', pipeline:[{$match: {
+    genres: 'Action',
+    year: {
+     $gte: 1975,
+     $lte: 1995
+    }
+   }}, {$project: {
+    _id: 1
+   }}, {$lookup: {
+    from: 'MoviesDenorm',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'ActionMovies'
+   }}, {$unwind: {
+    path: '$ActionMovies'
+   }}, {$unwind: {
+    path: '$ActionMovies.writers'
+   }}, {$project: {
+    _id: '$ActionMovies.writers'
+   }}, {$group: {
+    _id: '$_id',
+    count: {
+     $sum: 1
+    }
+   }}, {$match: {
+    count: {
+     $gt: 10
+    }
+   }}, {$lookup: {
+    from: 'PeopleDenorm',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'writerTable'
+   }}, {$unwind: {
+    path: '$writerTable'
+   }}, {$match: {
+    'writerTable.produced': {
+     $exists: true
+    }
+   }}, {$lookup: {
+    from: 'People',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'finalTable'
+   }}, {$unwind: {
+    path: '$finalTable'
+   }}, {$match: {
+    'finalTable.dyear': {
+     $exists: false
+    }
+   }}, {$project: {
+    _id: 1
+   }}]}

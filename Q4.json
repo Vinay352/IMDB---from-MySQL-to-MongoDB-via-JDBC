@@ -1,0 +1,89 @@
+{initialCollection:'Movies', pipeline:[{$project: {
+    _id: 1,
+    rating: 1,
+    genres: 1,
+    totalvotes: 1
+   }}, {$addFields: {
+    count: {
+     $size: {
+      $ifNull: [
+       '$genres',
+       []
+      ]
+     }
+    }
+   }}, {$match: {
+    totalvotes: {
+     $gt: 10000
+    },
+    genres: 'Western',
+    count: {
+     $gt: 1
+    }
+   }}, {$project: {
+    _id: 1,
+    rating: 1
+   }}, {$lookup: {
+    from: 'MoviesDenorm',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'moviesTable'
+   }}, {$unwind: {
+    path: '$moviesTable'
+   }}, {$addFields: {
+    count: {
+     $size: {
+      $ifNull: [
+       '$moviesTable.producers',
+       []
+      ]
+     }
+    }
+   }}, {$match: {
+    count: {
+     $gte: 2
+    }
+   }}, {$unwind: {
+    path: '$moviesTable.producers'
+   }}, {$lookup: {
+    from: 'PeopleDenorm',
+    localField: 'moviesTable.producers',
+    foreignField: '_id',
+    as: 'peopleTable'
+   }}, {$unwind: {
+    path: '$peopleTable'
+   }}, {$match: {
+    'peopleTable.acted': {
+     $exists: true
+    }
+   }}, {$lookup: {
+    from: 'People',
+    localField: 'peopleTable._id',
+    foreignField: '_id',
+    as: 'finalTable'
+   }}, {$unwind: {
+    path: '$finalTable'
+   }}, {$match: {
+    'finalTable.dyear': {
+     $exists: false
+    }
+   }}, {$group: {
+    _id: '$_id',
+    count: {
+     $sum: 1
+    }
+   }}, {$match: {
+    count: {
+     $gte: 2
+    }
+   }}, {$lookup: {
+    from: 'Movies',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'final'
+   }}, {$unwind: {
+    path: '$final'
+   }}, {$project: {
+    _id: '$_id',
+    rating: '$final.rating'
+   }}]}

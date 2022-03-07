@@ -1,0 +1,32 @@
+{initialCollection:'Movies', pipeline:[{$match: {
+    genres: 'Comedy',
+    rating: {
+     $gt: 6.5
+    },
+    year: {
+     $gte: 2013,
+     $lte: 2021
+    }
+   }}, {$lookup: {
+    from: 'MoviesDenorm',
+    localField: '_id',
+    foreignField: '_id',
+    as: 'newTable'
+   }}, {$unwind: {
+    path: '$newTable'
+   }}, {$addFields: {
+    count: {
+     $size: {
+      $ifNull: [
+       '$newTable.directors',
+       []
+      ]
+     }
+    }
+   }}, {$match: {
+    count: {
+     $gt: 4
+    }
+   }}, {$project: {
+    _id: 1
+   }}]}
